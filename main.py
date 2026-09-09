@@ -17,9 +17,7 @@ default_date = today_kst - datetime.timedelta(days=1)
 
 st.title("🎬 일별 박스오피스 조회")
 
-# ==========================================
-# 📅 [신규 추가] 달력 날짜 선택 기능
-# ==========================================
+# 📅 달력 날짜 선택 기능
 selected_date = st.date_input(
     "조회할 날짜를 선택하세요",
     value=default_date,
@@ -82,9 +80,19 @@ def format_rank_change(row):
 
 df["순위변동"] = df.apply(format_rank_change, axis=1)
 
+# ==========================================
+# 🏆 [신규 추가] 천만 관객 이상 트로피 이모지 표시
+# ==========================================
+def add_trophy_to_title(row):
+    if row["audiAcc"] >= 10000000:
+        return f"🏆 {row['movieNm']}"
+    return row["movieNm"]
+
+df["movieNm_display"] = df.apply(add_trophy_to_title, axis=1)
+
 # 1위 영화 지표 카드
 top = df.sort_values("rank").iloc[0]
-st.subheader(f"🥇 1위 — {top['movieNm']}")
+st.subheader(f"🥇 1위 — {top['movieNm_display']}")
 c1, c2, c3 = st.columns(3)
 c1.metric("해당 날짜 관객수", f"{top['audiCnt']:,}명")
 c2.metric("누적 관객수", f"{top['audiAcc']:,}명")
@@ -92,11 +100,9 @@ c3.metric("스크린수", f"{top['scrnCnt']:,}개")
 
 st.divider()
 
-# ==========================================
 # 🏆 1위부터 10위까지 순위표
-# ==========================================
 st.subheader(f"🏆 {selected_date} 박스오피스 Top 10 (1위 ~ 10위)")
-df_top10 = df.sort_values("rank").head(10)[["rank", "순위변동", "movieNm", "openDt", "audiCnt", "audiAcc", "scrnCnt"]]
+df_top10 = df.sort_values("rank").head(10)[["rank", "순위변동", "movieNm_display", "openDt", "audiCnt", "audiAcc", "scrnCnt"]]
 df_top10.columns = ["순위", "변동", "영화명", "개봉일", "당일 관객수", "누적 관객수", "스크린수"]
 
 st.dataframe(
@@ -115,14 +121,14 @@ st.divider()
 # 📊 관객수 상위 5편 막대그래프
 st.subheader("📊 관객수 상위 5편")
 top5 = df.sort_values("audiCnt", ascending=False).head(5)
-fig = px.bar(top5, x="movieNm", y="audiCnt", labels={"movieNm": "영화명", "audiCnt": "당일 관객수"})
+fig = px.bar(top5, x="movieNm_display", y="audiCnt", labels={"movieNm_display": "영화명", "audiCnt": "당일 관객수"})
 st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
 # 📋 전체 박스오피스 순위표
 st.subheader(f"📋 전체 순위표 (총 {len(df)}편)")
-table_all = df.sort_values("rank")[["rank", "순위변동", "movieNm", "openDt", "audiCnt", "audiAcc", "scrnCnt"]]
+table_all = df.sort_values("rank")[["rank", "순위변동", "movieNm_display", "openDt", "audiCnt", "audiAcc", "scrnCnt"]]
 table_all.columns = ["순위", "변동", "영화명", "개봉일", "당일 관객수", "누적 관객수", "스크린수"]
 
 st.dataframe(
